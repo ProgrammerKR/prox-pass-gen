@@ -1,0 +1,12 @@
+{
+  "name": "secure-pass-gen",
+  "version": "1.0.0",
+  "description": "A high-security random password generator CLI tool.",
+  "bin": {
+    "securepass": "./bin/index.js"
+  },
+  "keywords": ["password", "generator", "cli", "security"],
+  "author": "ProgrammerKR",
+  "license": "MIT",
+  "type": "module"
+}
