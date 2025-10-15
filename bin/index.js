@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 
-import readline from 'readline';
+/**
+ * SecurePass - Advanced Random Password Generator CLI
+ * Author: ProgrammerKR
+ */
+
 import crypto from 'crypto';
+import clipboard from 'clipboardy';
+import chalk from 'chalk';
 
 // Character sets
 const lower = 'abcdefghijklmnopqrstuvwxyz';
@@ -9,6 +15,7 @@ const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const numbers = '0123456789';
 const symbols = '!@#$%^&*()-_=+[]{}<>?';
 
+// Utility: Generate a secure random password
 function generatePassword(length, useLower, useUpper, useNumbers, useSymbols) {
   let charset = '';
   if (useLower) charset += lower;
@@ -17,7 +24,7 @@ function generatePassword(length, useLower, useUpper, useNumbers, useSymbols) {
   if (useSymbols) charset += symbols;
 
   if (!charset) {
-    console.error('Error: No character set selected.');
+    console.error(chalk.red('❌ Error: No character set selected.'));
     process.exit(1);
   }
 
@@ -30,25 +37,55 @@ function generatePassword(length, useLower, useUpper, useNumbers, useSymbols) {
   return password;
 }
 
-const args = process.argv.slice(2);
+// Utility: Measure password strength
+function calculateStrength(password) {
+  let score = 0;
+  if (/[a-z]/.test(password)) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  if (password.length >= 12) score++;
+
+  switch (score) {
+    case 5:
+      return chalk.green('🔥 Very Strong');
+    case 4:
+      return chalk.green('💪 Strong');
+    case 3:
+      return chalk.yellow('🟡 Moderate');
+    case 2:
+      return chalk.red('⚠️ Weak');
+    default:
+      return chalk.red('❌ Very Weak');
+  }
+}
+
+// Default options
 const options = {
   length: 16,
   lower: true,
   upper: true,
   numbers: true,
-  symbols: true
+  symbols: true,
+  copy: false
 };
 
-// CLI flags
+// Parse CLI arguments
+const args = process.argv.slice(2);
 args.forEach(arg => {
   if (arg.startsWith('--length=')) options.length = parseInt(arg.split('=')[1]);
   if (arg === '--no-lower') options.lower = false;
   if (arg === '--no-upper') options.upper = false;
   if (arg === '--no-numbers') options.numbers = false;
   if (arg === '--no-symbols') options.symbols = false;
-  if (arg === '--help') {
-    console.log(`
-Usage: securepass [options]
+  if (arg === '--copy') options.copy = true;
+
+  if (arg === '--help' || arg === '-h') {
+    console.log(chalk.cyanBright(`
+🔐 SecurePass - High Security Password Generator
+
+Usage:
+  securepass [options]
 
 Options:
   --length=<number>     Set password length (default: 16)
@@ -56,12 +93,18 @@ Options:
   --no-upper            Exclude uppercase letters
   --no-numbers          Exclude numbers
   --no-symbols          Exclude special characters
-  --help                Show help
-    `);
+  --copy                Copy the generated password to clipboard
+  --help, -h            Show help menu
+
+Examples:
+  securepass --length=20 --no-symbols
+  securepass --length=12 --copy
+`));
     process.exit(0);
   }
 });
 
+// Generate password
 const finalPassword = generatePassword(
   options.length,
   options.lower,
@@ -70,4 +113,22 @@ const finalPassword = generatePassword(
   options.symbols
 );
 
-console.log(`Generated Password: ${finalPassword}`);
+// Calculate password strength
+const strength = calculateStrength(finalPassword);
+
+// Output results
+console.log(chalk.bold.cyan('\n🔑 Generated Password: ') + chalk.bold.yellow(finalPassword));
+console.log(chalk.bold.cyan('🧠 Strength: ') + strength);
+console.log(chalk.bold.cyan('📏 Length: ') + chalk.white(options.length + ' characters'));
+
+// Optional clipboard copy
+if (options.copy) {
+  try {
+    await clipboard.write(finalPassword);
+    console.log(chalk.green('📋 Copied to clipboard!'));
+  } catch (err) {
+    console.error(chalk.red('❌ Failed to copy to clipboard:'), err.message);
+  }
+}
+
+console.log(chalk.gray('\n✅ SecurePass by ProgrammerKR\n'));
